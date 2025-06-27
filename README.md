@@ -2,7 +2,4 @@
 
 Inside this spooky place, you will find very useful stuff.
 
-### pygame
-```python
-
-```
+If you need me to do something that isnt hard, I'll do it, or try atleast.
