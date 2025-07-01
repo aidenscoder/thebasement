@@ -4,25 +4,53 @@ from inspect import signature
 
 def build(script:Callable[[],Any]):
     first_arg = ""
-    for param in signature(script).parameters.values():
+    parameters = signature(script).parameters
+    for param in parameters.values():
         first_arg = param
         break
-    
+    specific = id(script)
     if first_arg.name == "main":
-        specific = id(script)
+        
         for key,value in globals().items():
             if id(value) == specific:
                 del globals()[key]
-                sys.exit(script(0))
+                returner = list(script(0))
+                returner = returner[len(returner)-1]
+                print(returner)
+                if isinstance(returner,int):
+                    sys.exit(int(returner or 0))
+                else:
+                    raise TypeError(f"Expected type int but got {type(returner).__name__}")
                 break        
     
     elif first_arg.name == "If":
         if first_arg.default == True:
             script()
+            
+        for key,value in globals().items():
+            if id(value) == specific:
+                del globals()[key]
+                break    
         
     elif first_arg.name == "While":
-        while first_arg.default == True:
+        while first_arg.default() == True:
             script()
+            
+        for key,value in globals().items():
+            if id(value) == specific:
+                del globals()[key]
+                break    
+    
+    elif parameters["For"].name == "For":
+        for item in parameters["For"].default:
+            script(*item)
+            
+        for key,value in globals().items():
+            if id(value) == specific:
+                del globals()[key]
+                break    
+            
+
        
 T = TypeVar('T') 
 
@@ -36,14 +64,17 @@ class val(Generic[T]):
         else:
             return self.val
         
+class Struct:
+    def __init__(self,*types:tuple[object]):
+        self.types = types
+        self.structures = {}
+        
+    def __call__(self,**kwargs):
+        for key,value in kwargs.items():
+            if value in self.types:
+                self.structures[key] = value
+            else:
+                names = list(map(lambda x:x.__name__,self.types))
+                raise TypeError(f"Expected types, {names} as a structure attribute but got {value.__name__}.")
 
-fun = lambda main:(
-    tick := val[int](10),
-    CD := lambda While=lambda:(tick() < 10):(
-        tick(tick()+1),
-        print(tick())
-    ),build(CD)
-       
-            
-    
-);build(fun)
+
